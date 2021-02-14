@@ -2,6 +2,164 @@ Attribute VB_Name = "Utilities"
 Option Explicit
 Option Base 0
 
+	'"*****" means that the data has been intentionally left out 
+	'subs and functions with "*****" may not work now, since the previous data
+	'has been replaced with "*****"
+
+Sub ImportFromFile()
+    'Procedura sluzaca do importu plików CSV z AutoCADa do Excela
+
+    Dim logWB As Workbook, csvWB As Workbook
+    Dim csvFile As Workbook
+    Dim csvFile_Sheet As Worksheet
+    Dim logSheet As Worksheet
+    Dim cell As Range
+    Dim csvName As Variant
+    Dim exportName As Variant
+    Dim lastRowIndex As Integer
+    Dim spacing As Integer
+    
+    Dim Name As String
+    Dim Category As String
+    Dim nRowUsed As Integer
+    
+    Dim i As Integer
+    Dim csvLastRowIndex As Integer
+    Dim emptyRowCount As Integer
+    Dim emptyRowNums() As Integer
+    
+    Dim categoryColNumber As Integer, typeColNumber As Integer
+    'Zmienne do przechowania numeru kolumny kategori i typu
+    categoryColNumber = 6
+    typeColNumber = 7
+    
+    'Zmienna do ustawiania nowych tabel
+    lastRowIndex = 1
+    'Odleglosc miedzy kolejnymi importami z tabel
+    spacing = 1
+    
+    'Komunikat wyboru plikow
+    csvName = Application.GetOpenFilename("CSV Files (*.csv), *.csv" _
+    , MultiSelect:=True)
+    'Wylaczenie aktualizacji ekranu
+    Application.ScreenUpdating = False
+    'Przypisanie skoroszytu do zmiennej
+    Set logWB = ThisWorkbook
+    
+    'Stwórz nowy arkusz jesli nie ma w workbooku
+    If logWB.Worksheets("Import z CSV") Is Nothing Then
+        logWB.Worksheets.Add Before:=logWB.Worksheets(Worksheets.Count)
+        Set logSheet = logWB.Worksheets(Worksheets.Count)
+        logSheet.Name = "Import z CSV"
+    Else
+        Set logSheet = logWB.Worksheets("Import z CSV")
+    End If
+    'Wyczysc arkusz
+    logSheet.cells.Clear
+    'Dodanie kolumn
+    logSheet.cells(1, 1).Value = "TAG"
+    logSheet.cells(1, 2).Value = "OPIS"
+    logSheet.cells(1, 3).Value = "MATERIAL"
+    logSheet.cells(1, 4).Value = "ILOSC"
+    logSheet.cells(1, categoryColNumber).Value = "KATEGORIA"
+    logSheet.cells(1, typeColNumber).Value = "TYP"
+    'Petla do importowania plików CSV
+    For Each exportName In csvName
+        'Otwarcie pliku CSV
+        'Jesli Local nie jest ustawiony, to zle sie importuje
+        Workbooks.Open fileName:=exportName, Local:=True
+        
+        'Plik CSV aktywnym plikiem (jest traktowany jako skoroszyt)
+        Set csvFile = ActiveWorkbook
+        'Arkusz CSV jako aktywny arkusz
+        Set csvFile_Sheet = ActiveSheet
+        
+        nRowUsed = csvFile_Sheet.cells.SpecialCells(xlCellTypeLastCell).row
+        csvLastRowIndex = nRowUsed
+        For i = 2 To nRowUsed
+            If csvFile_Sheet.cells(i, 1) = " " Then
+                csvLastRowIndex = i
+                Exit For
+            End If
+        Next i
+
+        'Kopiowanie zawartosci pliku CSV do pliku zbiorczego
+        csvFile_Sheet.Range(csvFile_Sheet.cells(2, 1), csvFile_Sheet.cells(csvLastRowIndex, 4)).Copy logSheet.cells(lastRowIndex + 1, 1)
+        
+        'Dodanie kolumny z nazwa 
+        'logSheet.cells(lastRowIndex + 1, 5) = "*****"
+        
+        'Dodanie kolumny z kategoria 
+        'logSheet.cells(lastRowIndex + 1, 5) = "Kategoria"
+        
+        'Konwersja nazwy pliku na nazwe 
+        Name = ConvertToName(csvFile.Name)
+        
+        'Wypelnienie nowej kolumny nazwa 
+        logSheet.Range(logSheet.cells(lastRowIndex + 1, categoryColNumber), _
+            logSheet.cells(lastRowIndex + csvLastRowIndex, categoryColNumber)) = Name
+        'Ustawienie koloru nowej kolumny
+        logSheet.Range(logSheet.cells(lastRowIndex + 1, categoryColNumber), _
+            logSheet.cells(lastRowIndex + csvLastRowIndex, categoryColNumber)).Interior.Color = 192
+        
+        'Wypelnienie nowej kolumny kategoria 
+        Category = GetCategory(Name)
+        logSheet.Range(logSheet.cells(lastRowIndex + 1, typeColNumber), _
+            logSheet.cells(lastRowIndex + csvLastRowIndex, typeColNumber)) = Category
+        'Ustawienie koloru nowej kolumny
+        logSheet.Range(logSheet.cells(lastRowIndex + 1, typeColNumber), _
+            logSheet.cells(lastRowIndex + csvLastRowIndex, typeColNumber)).Interior.Color = 192
+            
+        'Okreslenie ostatniego wiersza w tabeli
+        lastRowIndex = lastRowIndex + csvFile_Sheet.cells.SpecialCells(xlCellTypeLastCell).row + spacing
+        
+        'Nie wyswieltaj komunikatow
+        Application.DisplayAlerts = False
+        'Zamknij plik CSV bez zapisywania
+        csvFile.Close False
+        'Przywróc wyswietlanie komunikatów
+        Application.DisplayAlerts = True
+    Next exportName
+    
+    'Ustaw automatyczna szerokosc kolumn i wyrównanie tekstu w komórkach
+    logSheet.cells.Columns.AutoFit
+    logSheet.cells.Columns.HorizontalAlignment = xlLeft
+    logSheet.cells.Columns.VerticalAlignment = xlBottom
+    'Usun puste wiersze
+    Call DeleteEmptyRows(logSheet.UsedRange)
+    'Podsumuj dane za pomoca tablicy przestawnej
+    'Call CreatePivotTable
+    logWB.Activate
+    Application.ScreenUpdating = True
+End Sub
+
+Sub DeleteEmptyRows(cells As Range)
+    'Procedura do usuwania
+    Dim i As Long
+    Dim DelRange As Range
+    On Error GoTo ErrorHandler
+    Application.ScreenUpdating = False
+    
+    For i = 1 To cells.Rows.Count
+        If WorksheetFunction.CountA(cells.Range("A" & i)) = 0 Or _
+            cells.Range("A" & i).Text = " " Then
+            If DelRange Is Nothing Then
+                Set DelRange = cells.Range("A" & i).EntireRow
+            Else
+                Set DelRange = Union(DelRange, cells.Range("A" & i).EntireRow)
+            End If
+        End If
+    Next i
+    'Usun wiersze
+    If Not DelRange Is Nothing Then DelRange.Delete shift:=xlUp
+    
+    Application.ScreenUpdating = True
+
+
+
+
+
+
 Function User() As String
     'Zwraca nazwê u¿ytkownika komputera
     User = Application.UserName
