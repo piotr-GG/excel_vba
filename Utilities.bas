@@ -1,14 +1,69 @@
-Attribute VB_Name = "Utilities"
+ï»¿Attribute VB_Name = "Utilities"
 Option Explicit
 Option Base 0
 
+'Macro for measuring pixel sum of selected cells
+Sub MeasureSelection_Pxs()
+    Dim cell As Range
+    Dim Width As Double
+    Dim Height As Double
+    
+    For Each cell In Selection.cells.Columns(1)
+        Height = Height + cell.Height
+    Next cell
+    
+    For Each cell In Selection.cells.Rows(1)
+        Width = Width + cell.Width
+    Next cell
+    
+    MsgBox "WysokoÅ›Ä‡: " & Round(Height / 1, 2) & " pts" & vbNewLine _
+        & "SzerokoÅ›Ä‡: " & Round(Width, 2) & " px", vbInformation
+End Sub
+
+'Toggles page breaks
+Sub TogglePageBreaks()
+    ActiveSheet.DisplayPageBreaks = Not ActiveSheet.DisplayPageBreaks
+End Sub
+
+'Switches page views
+Sub SwitchPageViews()
+    Select Case ActiveWindow.View
+        Case xlNormalView
+            ActiveWindow.View = xlPageBreakPreview
+        Case xlPageBreakPreview
+            ActiveWindow.View = xlNormalView
+        Case Else
+    End Select
+End Sub
+
+'Auto fits all selected columns but applies minimum width if the auto fit width is less than certain value
+Sub AutoFitWithMinWidth()
+    Application.ScreenUpdating = False
+    Dim col As Range
+    Dim colWidth As Double
+    Dim hidden As Boolean
+    For Each col In ActiveSheet.UsedRange.Columns
+        hidden = col.hidden
+        Debug.Print hidden
+        col.AutoFit
+        colWidth = col.ColumnWidth
+        Debug.Print colWidth
+		'Here the minimum width is hard-coded as 7
+        If colWidth < 7 Then
+            col.ColumnWidth = 7
+        End If
+        col.hidden = hidden
+    Next col
+    Application.ScreenUpdating = True
+End Sub
+
+	'Macro for importing CSV files from AutoCAD to Excel
+	'Please note that the macro has not been generalized so it requires some work to get it working properly
 	'"*****" means that the data has been intentionally left out 
 	'subs and functions with "*****" may not work now, since the previous data
 	'has been replaced with "*****"
-
+	
 Sub ImportFromFile()
-    'Procedura sluzaca do importu plików CSV z AutoCADa do Excela
-
     Dim logWB As Workbook, csvWB As Workbook
     Dim csvFile As Workbook
     Dim csvFile_Sheet As Worksheet
@@ -46,7 +101,7 @@ Sub ImportFromFile()
     'Przypisanie skoroszytu do zmiennej
     Set logWB = ThisWorkbook
     
-    'Stwórz nowy arkusz jesli nie ma w workbooku
+    'StwÃ³rz nowy arkusz jesli nie ma w workbooku
     If logWB.Worksheets("Import z CSV") Is Nothing Then
         logWB.Worksheets.Add Before:=logWB.Worksheets(Worksheets.Count)
         Set logSheet = logWB.Worksheets(Worksheets.Count)
@@ -63,7 +118,7 @@ Sub ImportFromFile()
     logSheet.cells(1, 4).Value = "ILOSC"
     logSheet.cells(1, categoryColNumber).Value = "KATEGORIA"
     logSheet.cells(1, typeColNumber).Value = "TYP"
-    'Petla do importowania plików CSV
+    'Petla do importowania plikÃ³w CSV
     For Each exportName In csvName
         'Otwarcie pliku CSV
         'Jesli Local nie jest ustawiony, to zle sie importuje
@@ -117,18 +172,16 @@ Sub ImportFromFile()
         Application.DisplayAlerts = False
         'Zamknij plik CSV bez zapisywania
         csvFile.Close False
-        'Przywróc wyswietlanie komunikatów
+        'PrzywrÃ³c wyswietlanie komunikatÃ³w
         Application.DisplayAlerts = True
     Next exportName
     
-    'Ustaw automatyczna szerokosc kolumn i wyrównanie tekstu w komórkach
+    'Ustaw automatyczna szerokosc kolumn i wyrÃ³wnanie tekstu w komÃ³rkach
     logSheet.cells.Columns.AutoFit
     logSheet.cells.Columns.HorizontalAlignment = xlLeft
     logSheet.cells.Columns.VerticalAlignment = xlBottom
     'Usun puste wiersze
     Call DeleteEmptyRows(logSheet.UsedRange)
-    'Podsumuj dane za pomoca tablicy przestawnej
-    'Call CreatePivotTable
     logWB.Activate
     Application.ScreenUpdating = True
 End Sub
@@ -155,33 +208,8 @@ Sub DeleteEmptyRows(cells As Range)
     
     Application.ScreenUpdating = True
 
-
-
-
-
-
-Function User() As String
-    'Zwraca nazwê u¿ytkownika komputera
-    User = Application.UserName
-End Function
-
-Function ExcelDir()
-    'Zwraca œcie¿kê w której jest zainstalowany Excel
-    ExcelDir = Application.Path
-End Function
-
-Function SheetCount()
-    'Zwraca liczbê arkuszy w skoroszycie
-    SheetCount = Application.Caller.Parent.Parent.Sheets.Count
-End Function
-
-Function SheetName()
-    'Zwraca nazwê skoroszytu
-    SheetName = Application.Caller.Parent.Name
-End Function
-
 Function GetPositionOfSheet() As Integer
-    'Funkcja s³u¿¹ca do okreœlenia pozycji arkusza w skoroszycie
+    'Funkcja sÅ‚uÅ¼Ä…ca do okreÅ“lenia pozycji arkusza w skoroszycie
     Dim currentSheetName As String
     Dim i As Integer
     
@@ -197,8 +225,28 @@ Function GetPositionOfSheet() As Integer
     GetPositionOfSheet = 0
 End Function
 
+Function User() As String
+    'Zwraca nazwÄ™ uÅ¼ytkownika komputera
+    User = Application.UserName
+End Function
+
+Function ExcelDir()
+    'Zwraca Å›cieÅ¼kÄ™ w ktÃ³rej jest zainstalowany Excel
+    ExcelDir = Application.Path
+End Function
+
+Function SheetCount()
+    'Zwraca liczbÃª arkuszy w skoroszycie
+    SheetCount = Application.Caller.Parent.Parent.Sheets.Count
+End Function
+
+Function SheetName()
+    'Zwraca nazwÄ™ skoroszytu
+    SheetName = Application.Caller.Parent.Name
+End Function
+
 Function AutoNumber(Optional maxPage As Integer) As String
-    'Funkcja s³u¿¹ca do automatycznego numerowania stron
+    'Funkcja sÅ‚uÅ¼Ä…ca do automatycznego numerowania stron
     If maxPage = 0 Then
         maxPage = SheetCount
     End If
@@ -296,9 +344,9 @@ Sub DescribeFunction()
     Dim Arg1Desc As String
     
     FuncName = "VowelCount"
-    FuncDesc = "Zlicza samog³oski"
+    FuncDesc = "Zlicza samogÂ³oski"
     FuncCat = 7
-    Arg1Desc = "Tekst, do zliczenia samog³osek"
+    Arg1Desc = "Tekst, do zliczenia samogÅ‚osek"
     
     PtrSafe
     
@@ -310,7 +358,7 @@ Sub DescribeFunction()
 End Sub
 
 Public Function ContainsMergedCells(rng As Range)
-    'Sprawdza czy w danym zakresie s¹ po³¹czone komórki
+    'Sprawdza czy w danym zakresie sÄ… poÅ‚Ä…czone komÃ³rki
     Dim cell As Range
     ContainsMergedCells = False
     For Each cell In rng
@@ -364,7 +412,7 @@ Sub DeleteEmptyColumns(Optional skipPrompt As Boolean = True)
     
     If skipPrompt = False Then
         Dim ans As Integer
-        ans = MsgBox(Prompt:="Czy na pewno chcesz usun¹æ puste kolumny?", _
+        ans = MsgBox(Prompt:="Czy na pewno chcesz usunÂ¹Ã¦ puste kolumny?", _
                      Buttons:=vbYesNo, Title:="Potwierdzenie")
         If ans = vbYes Then
             colsToDelete.Delete
@@ -398,7 +446,7 @@ Sub DeleteEmptyRows(Optional skipPrompt As Boolean = True)
     
     If skipPrompt = False Then
         Dim ans As Integer
-        ans = MsgBox(Prompt:="Czy na pewno chcesz usun¹æ puste wiersze?", _
+        ans = MsgBox(Prompt:="Czy na pewno chcesz usunÂ¹Ã¦ puste wiersze?", _
                      Buttons:=vbYesNo, Title:="Potwierdzenie")
         If ans = vbYes Then
             rowsToDelete.Delete
@@ -413,7 +461,7 @@ Sub CleanRange()
     Dim rng As Range
     Dim vals As Variant
     If Not TypeOf Selection Is Range Then
-        MsgBox "B³êdne zaznaczenie!"
+        MsgBox "BÂ³Ãªdne zaznaczenie!"
         Exit Sub
     End If
     
@@ -435,7 +483,7 @@ Sub CleanRange()
     selectedCells.Value = vals
 End Sub
 
-Sub CleanAndDeleteShit()
+Sub CleanAndDelete()
     Call CleanRange
     Call DeleteEmptyColumns
     Call DeleteEmptyRows
@@ -498,13 +546,14 @@ Public Sub CreateNewWbook()
     On Error GoTo 0
 End Sub
 
+'Macro for swapping columns
 Sub SwapCols()
     If TypeName(Selection) <> "Range" Then
         Exit Sub
     End If
     
     If Selection.Areas.Count <> 2 Then
-        MsgBox "Proszê wybraæ dwie kolumny do zamiany"
+        MsgBox "ProszÃª wybraÃ¦ dwie kolumny do zamiany"
         Exit Sub
     End If
     
@@ -513,12 +562,12 @@ Sub SwapCols()
     Set areaSecond = Selection.Areas(2)
     
     If areaFirst.Columns.Count > 1 Or areaSecond.Columns.Count > 1 Then
-        MsgBox "Proszê wybraæ po jednej kolumnie z ka¿dego zakresu"
+        MsgBox "ProszÃª wybraÃ¦ po jednej kolumnie z kaÂ¿dego zakresu"
         Exit Sub
     End If
     
     If areaFirst.Rows.Count <> areaSecond.Rows.Count Then
-        MsgBox "Wybrane zakresy maj¹ ró¿n¹ liczbê wierszy!", vbExclamation
+        MsgBox "Wybrane zakresy majÂ¹ rÃ³Â¿nÂ¹ liczbÃª wierszy!", vbExclamation
         Exit Sub
     End If
     
