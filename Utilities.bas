@@ -2,6 +2,27 @@
 Option Explicit
 Option Base 0
 
+'Macro that colours the rows according to formatting applied in N column
+Sub ColorAllTheCells()
+
+    Dim selInterior As Interior
+    Dim selectedRange As Range
+    Set selectedRange = ThisWorkbook.ActiveSheet.UsedRange
+	
+    Dim colour As Double
+    Dim cell As Range
+    For Each cell In selectedRange.Rows
+
+        Set selInterior = cell.Range("N1").Interior
+
+        colour = selInterior.Color
+
+        cell.Interior.Color = colour
+
+    Next cell
+
+End Sub
+
 'Macro for measuring pixel sum of selected cells
 Sub MeasureSelection_Pxs()
     Dim cell As Range
