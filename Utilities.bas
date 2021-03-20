@@ -23,6 +23,29 @@ Sub ColorAllTheCells()
 
 End Sub
 
+Sub TransposeData()
+    Dim cell As Range
+    Dim start As Long
+    Dim lastCell As Long
+    
+    Dim firstCellToCopy As Range
+    Dim lastCellToCopy As Range
+    Dim positionName As String
+    
+    lastCell = 66
+    
+    For start = 1 To lastCell Step 5
+        Set firstCellToCopy = Cells(1 + start, 1)
+        Set lastCellToCopy = Cells(4 + start, 4)
+        positionName = firstCellToCopy.Offset(-1, 0).Value
+        Range(firstCellToCopy, lastCellToCopy).Copy
+        Cells(start + 1, 5).PasteSpecial Transpose:=True
+        Range(Cells(2 + start, 9), Cells(4 + start, 9)).Value = positionName
+    Next start
+    
+    Range("A:D").Delete
+End Sub
+
 'Macro for measuring pixel sum of selected cells
 Sub MeasureSelection_Pxs()
     Dim cell As Range
