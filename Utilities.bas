@@ -2,6 +2,98 @@
 Option Explicit
 Option Base 0
 
+'Macro that inserts 2 rows below and copies the data 
+Sub InsertRows()
+    Dim lastCell As Long, i As Long
+    Dim rng As Range, cellVal As Variant
+    Set rng = Intersect(Range("B:B"), Range("A1").CurrentRegion)
+    Set rng = rng.Resize(rng.Rows.Count - 1, rng.Columns.Count).Offset(1, 0)
+    lastCell = rng.Rows.Count
+    Debug.Print "Last cell", lastCell
+    rng.Select
+    
+    Application.ScreenUpdating = False
+    For i = lastCell To 0 Step -1
+        cellVal = rng.cells(i, 1)
+        rng.cells(i, 1).EntireRow.Insert Shift:=xlShiftDown
+        rng.cells(i, 1).Value = cellVal
+        rng.cells(i, 1).EntireRow.Insert Shift:=xlShiftDown
+        rng.cells(i, 1).Value = cellVal
+    Next i
+    Application.ScreenUpdating = True
+End Sub
+
+
+'Macro for automatic backups daily
+Private Sub Workbook_AfterSave(ByVal Success As Boolean)
+    On Error GoTo 0
+    Dim oldDirName As String, path As String
+    Dim fNameToSave As String
+
+    oldDirName = "99. OLD"
+    path = ThisWorkbook.path
+    Debug.Print "Path: ", path
+
+
+    fNameToSave = Dir(path & "\" & oldDirName, vbDirectory)
+    Debug.Print "fName: ", fNameToSave
+
+    If Len(fNameToSave) = 0 Then
+        MsgBox "Folder " & oldDirName & " nie istnieje. Proszę najpierw go utworzyć!", vbCritical
+        Exit Sub
+    End If
+
+    On Error Resume Next
+
+    Dim today As Long
+    today = CLng(CDate(Now))
+    Debug.Print "Today: ", today
+
+    Dim lastSavedData As String
+    lastSavedData = ThisWorkbook.Names.Item("Last_saved")
+
+    If lastSavedData = "" Then
+        ThisWorkbook.Names.Add "Last_saved", today
+        'lastSavedData = today
+        MsgBox "Dodano datę last saved"
+    End If
+
+    Dim lastSaved As Long
+    lastSaved = CLng(VBA.Replace(lastSavedData, "=", ""))
+
+    'Jeśli nie było zapisane dzisiaj, to trzeba zapisać
+    If lastSaved <> today Then
+        MsgBox "Aktalizacja daty"
+        'Zaktualizowanie daty
+        ThisWorkbook.Names.Item("Last_saved").Value = today
+
+        Dim currentFileName As String
+        currentFileName = ThisWorkbook.Name
+
+        Dim currFilePath As String
+        currFilePath = ThisWorkbook.FullName
+
+        Dim newFilename As String
+        newFilename = Format(Now, "Short date") & "_" & currentFileName
+
+        Dim saveFilePath As String
+        saveFilePath = path & "\" & oldDirName & "\" & newFilename
+
+        Debug.Print "Save file path", saveFilePath
+
+        If ThisWorkbook.Saved Then
+            Debug.Print "#### Juz jest zapisany ####"
+            ThisWorkbook.SaveCopyAs saveFilePath
+        Else
+            Debug.Print "#### Nie jest zapisany ####"
+            ThisWorkbook.Save
+            ThisWorkbook.SaveCopyAs saveFilePath
+        End If
+        MsgBox "Zapisane"
+    End If
+End Sub
+
+
 'Macro that colours the rows according to formatting applied in N column
 Sub ColorAllTheCells()
 
